@@ -1,0 +1,33 @@
+name: dataDiff
+
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Computing data difference
+      uses: appleboy/ssh-action@master
+      with:
+        host: mlgithub.westus2.cloudapp.azure.com
+        username: ${{ secrets.Azure_user }}
+        password: ${{ secrets.Azure_password }}
+        port: 22
+        envs: 
+            GITHUB_REPOSITORY,GITHUB_HEAD_REF, GITHUB_BASE_REF
+        script: |
+                repo_folder=${GITHUB_REPOSITORY##*/}
+                cd Desktop
+                if [ ! -d $repo_folder ] ; then
+                    git clone https://github.com/$GITHUB_REPOSITORY.git
+                    cd $repo_folder
+                    git submodule update --init --recursive
+                    git lfs pull
+                else
+                    cd $repo_folder
+                    git pull --all
+                    git submodule update --init --recursive
+                    git lfs pull
+                fi
+                /data/anaconda/envs/py35/bin/python3 .github/compare.py $GITHUB_BASE_REF $GITHUB_HEAD_REF

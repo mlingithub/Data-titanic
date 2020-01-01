@@ -1,0 +1,34 @@
+name: sync
+
+on: push
+  
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Syncing with cloud
+      uses: appleboy/ssh-action@master
+      with:
+        host: mlgithub.westus2.cloudapp.azure.com
+        username: ${{ secrets.Azure_user }}
+        password: ${{ secrets.Azure_password }}
+        port: 22
+        envs: 
+            GITHUB_REPOSITORY
+        script: |
+                repo_folder=${GITHUB_REPOSITORY##*/}
+                cd Desktop
+                if [ ! -d $repo_folder ] ; then
+                    git clone https://github.com/$GITHUB_REPOSITORY.git
+                    cd $repo_folder
+                    git submodule update --init --recursive
+                    git lfs pull
+                else
+                    cd $repo_folder
+                    git pull --all
+                    git submodule update --init --recursive
+                    git lfs pull
+                fi
